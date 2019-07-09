@@ -1,0 +1,23 @@
+.App{
+  margin: 0 auto;
+  max-width: 80rem;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem,1fr));
+  grid-auto-flow: dense;
+}
+img{
+  display: block;
+  object-fit: cover;
+  max-width: 100%;
+  /* align-self: center;
+  justify-self: center; */
+}
+form{
+  grid-column: 1/-1;
+}
+/* div{
+  box-sizing: border-box;
+  border: 1px solid black;
+  height: 5rem;
+} */
