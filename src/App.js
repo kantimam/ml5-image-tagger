@@ -18,7 +18,7 @@ export default class App extends Component {
     }
   }
   componentDidMount(){
-    fetch("https://picsum.photos/v2/list").then(res=>{
+    fetch("https://picsum.photos/v2/list?page=2&limit=100").then(res=>{
       return res.json();
     }).then(resData=>{
       console.log(resData)
@@ -34,10 +34,10 @@ export default class App extends Component {
     ml5.imageClassifier('MobileNet')
       .then(classifier => classifier.classify(image))
       .then(results => {
-        this.setState({
+        /* this.setState({
           probability: results[0].confidence.toFixed(4),
           result: results[0].label
-        })
+        }) */
         console.dir(results[0])
       });
   }
@@ -55,11 +55,11 @@ export default class App extends Component {
         console.log(imageData, this.state)
         this.postData(imageData, classResult[0].label, image.src)
         
-        this.setState({
+        /* this.setState({
           probability: results[0].confidence.toFixed(4),
           result: results[0].label,
           data: results
-        })
+        }) */
       })
   }
 
@@ -85,7 +85,7 @@ export default class App extends Component {
         console.log(error);
         window.alert('failure')
       }).finally(()=>{
-        URL.revokeObjectURL(imageURL)
+        /* URL.revokeObjectURL(imageURL) */
       });
     
   }
@@ -108,7 +108,7 @@ export default class App extends Component {
     fewPics.forEach(element=>{
       fetch(element.download_url).then(response=>response.blob()).then(data=>{
         this.createImage(data).then((data)=>{
-          this.setState({twoPic: data.imageElement.src})
+          /* this.setState({twoPic: data.imageElement.src}) */
           this.classifyImageState(data.imageElement, data.imageData)
         })
         .catch(error=>console.log(error))
@@ -125,7 +125,7 @@ export default class App extends Component {
         <img src={pic.download_url} alt="nothing"></img>
       ) */}
       {/* <img onClick={this.classifyImage} src={this.state.onePic} alt="error"/> */}
-      <img /* onClick={this.classifyImage} */onClick={()=>this.twoPicCreate(this.state.pics, {start:14, end:28})} src={this.state.twoPic} alt="error"/>
+      <img /* onClick={this.classifyImage} */onClick={()=>this.twoPicCreate(this.state.pics, {start:76, end:81})} src={this.state.twoPic} alt="error"/>
       
       <div>{this.state.probability}</div>
       <div>{this.state.result}</div>
