@@ -10,6 +10,8 @@ export default class App extends Component {
     super(props)
     this.range={start: 0, end: 6};
     this.failed=false;
+    this.batchProgress=0;
+    this.batchSize=6;
     this.state = {
       pics: [],
       onePic: "",
@@ -20,7 +22,7 @@ export default class App extends Component {
     }
   }
   componentDidMount(){
-    fetch("https://picsum.photos/v2/list?page=2&limit=100").then(res=>{
+    fetch("https://picsum.photos/v2/list?page=3&limit=100").then(res=>{
       return res.json();
     }).then(resData=>{
       console.log(resData)
@@ -30,7 +32,8 @@ export default class App extends Component {
   
   restartAfterCrash=()=>{
     const classState=JSON.parse(localStorage.getItem("classifierState"));
-    if(classState.crashed){
+    localStorage.clear();
+    if(classState && classState.crashed){
       this.range={start: classState.start, end: classState.end};
       // restart classification from crash
       this.twoPicCreate(this.state.pics, this.range)
@@ -65,28 +68,38 @@ export default class App extends Component {
         
         // post data to backend
         console.log(imageData, this.state)
-        this.postData(imageData, classResult[0].label, image.src)
+        this.postData(imageData, classResult[0].label, image.src, index)
         
         /* this.setState({
           probability: results[0].confidence.toFixed(4),
           result: results[0].label,
           data: results
         }) */
+        
       }).catch(error=>{
         console.log(error);
         // sometimes ap runs out of vram break out of loop and refresh page
-        this.range.start+=index;
-        this.range.end+=index;
-        localStorage.setItem(this.range);
-        this.failed=true;
-        localStorage.setItem("classifierState",JSON.stringify({...this.range, crashed: true}));
-        window.location.reload(true);
-
+        this.progressToNextBatch(this.batchProgress)
       })
   }
 
+  progressToNextBatch=(index)=>{
+    if(this.range.start<99){
+      this.range.start+=index;
+      this.range.end+=index;
+      this.range.start=this.range.start<99? this.range.start : 99;
+      this.range.end=this.range.end<99? this.range.end : 99;
+      this.failed=true;
+      localStorage.setItem("classifierState",JSON.stringify({...this.range, crashed: true}));
+      window.location.reload(true);
+    }
+    else{
+      localStorage.clear();
+      console.log("done")
+    }
+  }
 
-  postData = (file, tags, imageURL) => {
+  postData = (file, tags, imageURL, index) => {
     const tagArrString = JSON.stringify(tags.split(","));
     let formData = new FormData()
     formData.append('file', file)
@@ -105,9 +118,17 @@ export default class App extends Component {
       })
       .catch((error) => {
         console.log(error);
-        window.alert('failure')
+        /* window.alert('failure') */
       }).finally(()=>{
+        // when everything is done refresh the page and start with new batch
+        this.batchProgress++;
         URL.revokeObjectURL(imageURL)
+        console.log("size: "+ this.batchSize)
+        console.log("progress: "+ (this.batchProgress))
+        if(this.batchProgress>=this.batchSize){
+          this.batchProgress=0;
+          this.progressToNextBatch(this.batchSize)
+        }
       });
     
   }
