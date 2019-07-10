@@ -8,6 +8,8 @@ const ml5=window.ml5;
 export default class App extends Component {
   constructor(props) {
     super(props)
+    this.range={start: 0, end: 6};
+    this.failed=false;
     this.state = {
       pics: [],
       onePic: "",
@@ -22,10 +24,20 @@ export default class App extends Component {
       return res.json();
     }).then(resData=>{
       console.log(resData)
-      this.setState({pics: resData, onePic: resData[5].download_url})
+      this.setState({pics: resData, onePic: resData[5].download_url},()=>this.restartAfterCrash())
     }).catch(error=>console.log(error))
   }
   
+  restartAfterCrash=()=>{
+    const classState=JSON.parse(localStorage.getItem("classifierState"));
+    if(classState.crashed){
+      this.range={start: classState.start, end: classState.end};
+      // restart classification from crash
+      this.twoPicCreate(this.state.pics, this.range)
+    }
+    
+  }
+
   
   classifyImage=(event)=>{
     const image=event.target;
@@ -43,7 +55,7 @@ export default class App extends Component {
   }
   
   
-  classifyImageState=(image, imageData)=>{
+  classifyImageState=(image, imageData, index)=>{
 
     ml5.imageClassifier('MobileNet')
       .then(classifier => classifier.classify(image))
@@ -60,6 +72,16 @@ export default class App extends Component {
           result: results[0].label,
           data: results
         }) */
+      }).catch(error=>{
+        console.log(error);
+        // sometimes ap runs out of vram break out of loop and refresh page
+        this.range.start+=index;
+        this.range.end+=index;
+        localStorage.setItem(this.range);
+        this.failed=true;
+        localStorage.setItem("classifierState",JSON.stringify({...this.range, crashed: true}));
+        window.location.reload(true);
+
       })
   }
 
@@ -85,7 +107,7 @@ export default class App extends Component {
         console.log(error);
         window.alert('failure')
       }).finally(()=>{
-        /* URL.revokeObjectURL(imageURL) */
+        URL.revokeObjectURL(imageURL)
       });
     
   }
@@ -105,17 +127,20 @@ export default class App extends Component {
   
   twoPicCreate=(picArray, range)=>{
     const fewPics=picArray.slice(range.start,range.end)
-    fewPics.forEach(element=>{
-      fetch(element.download_url).then(response=>response.blob()).then(data=>{
-        this.createImage(data).then((data)=>{
-          /* this.setState({twoPic: data.imageElement.src}) */
-          this.classifyImageState(data.imageElement, data.imageData)
-        })
-        .catch(error=>console.log(error))
-  
-      })
-    })
+    for(let i=0; i<fewPics.length; i++){
+      if(this.failed){  
+        break;
+      }else{
+        fetch(fewPics[i].download_url).then(response=>response.blob()).then(data=>{
+          this.createImage(data).then((data)=>{
+            /* this.setState({twoPic: data.imageElement.src}) */
+            this.classifyImageState(data.imageElement, data.imageData, i)
+          })
+          .catch(error=>console.log(error))
     
+        })
+      } 
+    }
   }
 
   render() {
@@ -125,7 +150,7 @@ export default class App extends Component {
         <img src={pic.download_url} alt="nothing"></img>
       ) */}
       {/* <img onClick={this.classifyImage} src={this.state.onePic} alt="error"/> */}
-      <img /* onClick={this.classifyImage} */onClick={()=>this.twoPicCreate(this.state.pics, {start:76, end:81})} src={this.state.twoPic} alt="error"/>
+      <img /* onClick={this.classifyImage} */onClick={()=>this.twoPicCreate(this.state.pics, this.range)} src={this.state.twoPic} alt="error"/>
       
       <div>{this.state.probability}</div>
       <div>{this.state.result}</div>
