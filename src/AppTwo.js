@@ -7,7 +7,7 @@ const ml5=window.ml5;
 export default class App extends Component {
   constructor(props) {
     super(props)
-    this.range={start: 0, end: 1};
+    this.range={start: 0, end: 6};
     this.failed=false;
     this.batchProgress=0;
     this.batchSize=6;
@@ -17,13 +17,11 @@ export default class App extends Component {
       twoPic: "",
       probability: 0,
       result: "",
-      data: {},
-      start: 0,
-      end: 0
+      data: {}
     }
   }
   componentDidMount(){
-    fetch("https://picsum.photos/v2/list?page=10&limit=100").then(res=>{
+    fetch("https://picsum.photos/v2/list?page=3&limit=100").then(res=>{
       return res.json();
     }).then(resData=>{
       console.log(resData)
@@ -85,7 +83,6 @@ export default class App extends Component {
   }
 
   progressToNextBatch=(index)=>{
-    return
     if(this.range.start<99){
       this.range.start+=index;
       this.range.end+=index;
