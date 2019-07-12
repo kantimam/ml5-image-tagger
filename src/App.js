@@ -7,7 +7,7 @@ const ml5=window.ml5;
 export default class App extends Component {
   constructor(props) {
     super(props)
-    this.range={start: 0, end: 1};
+    this.range={start: 0, end: 5};
     this.failed=false;
     this.batchProgress=0;
     this.batchSize=6;
@@ -27,79 +27,12 @@ export default class App extends Component {
       return res.json();
     }).then(resData=>{
       console.log(resData)
-      this.setState({pics: resData, onePic: resData[5].download_url},()=>this.restartAfterCrash())
+      this.setState({pics: resData, onePic: resData[5].download_url})
     }).catch(error=>console.log(error))
   }
-  
-  restartAfterCrash=()=>{
-    const classState=JSON.parse(localStorage.getItem("classifierState"));
-    localStorage.clear();
-    if(classState && classState.crashed){
-      this.range={start: classState.start, end: classState.end};
-      // restart classification from crash
-      this.twoPicCreate(this.state.pics, this.range)
-    }
-    
-  }
 
   
-  classifyImage=(event)=>{
-    const image=event.target;
-    console.dir(event.target)
 
-    ml5.imageClassifier('MobileNet')
-      .then(classifier => classifier.classify(image))
-      .then(results => {
-        /* this.setState({
-          probability: results[0].confidence.toFixed(4),
-          result: results[0].label
-        }) */
-        console.dir(results[0])
-      });
-  }
-  
-  
-  classifyImageState=(image, imageData, index)=>{
-
-    ml5.imageClassifier('MobileNet')
-      .then(classifier => classifier.classify(image))
-      .then(results => {
-        const classResult=results;
-        console.dir(classResult)
-        
-        // post data to backend
-        console.log(imageData, this.state)
-        this.postData(imageData, classResult[0].label, image.src, index)
-        
-        /* this.setState({
-          probability: results[0].confidence.toFixed(4),
-          result: results[0].label,
-          data: results
-        }) */
-        
-      }).catch(error=>{
-        console.log(error);
-        // sometimes ap runs out of vram break out of loop and refresh page
-        this.progressToNextBatch(this.batchProgress)
-      })
-  }
-
-  progressToNextBatch=(index)=>{
-    return
-    if(this.range.start<99){
-      this.range.start+=index;
-      this.range.end+=index;
-      this.range.start=this.range.start<99? this.range.start : 99;
-      this.range.end=this.range.end<99? this.range.end : 99;
-      this.failed=true;
-      localStorage.setItem("classifierState",JSON.stringify({...this.range, crashed: true}));
-      window.location.reload(true);
-    }
-    else{
-      localStorage.clear();
-      console.log("done")
-    }
-  }
 
   postData = (file, tags, imageURL, index) => {
     const tagArrString = JSON.stringify(tags.split(","));
@@ -146,22 +79,44 @@ export default class App extends Component {
       image.onerror=reject;
     })
   }
+  classifyImageState=async (image, imageData, index)=>{
+
+    return ml5.imageClassifier('MobileNet')
+      .then(classifier => classifier.classify(image))
+      .then(results => {
+        const classResult=results;
+        console.dir(classResult)
+        
+        // post data to backend
+        console.log(imageData, this.state)
+        this.postData(imageData, classResult[0].label, image.src, index)
+        
+        /* this.setState({
+          probability: results[0].confidence.toFixed(4),
+          result: results[0].label,
+          data: results
+        }) */
+        
+      }).catch(error=>{
+        console.log(error);
+        // sometimes ap runs out of vram break out of loop and refresh page
+        this.progressToNextBatch(this.batchProgress)
+      })
+  }
   
-  
-  twoPicCreate=(picArray, range)=>{
+  twoPicCreate=async(picArray, range)=>{
     const fewPics=picArray.slice(range.start,range.end)
     for(let i=0; i<fewPics.length; i++){
       if(this.failed){  
         break;
       }else{
-        fetch(fewPics[i].download_url).then(response=>response.blob()).then(data=>{
-          this.createImage(data).then((data)=>{
-            /* this.setState({twoPic: data.imageElement.src}) */
-            this.classifyImageState(data.imageElement, data.imageData, i)
-          })
-          .catch(error=>console.log(error))
-    
-        })
+        const response=await fetch(fewPics[i].download_url);
+        const json=await response.blob();
+        const image=await this.createImage(json);
+        const model=await ml5.imageClassifier('MobileNet');
+        const results=await model.classify(image.imageElement);
+        console.log(`label: ${results[0].label} with confidence: ${results[0].confidence}`)
+        console.log(results)
       } 
     }
   }
