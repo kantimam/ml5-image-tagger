@@ -17,7 +17,8 @@ export default class App extends Component {
       twoPic: "",
       probability: 0,
       result: "",
-      data: {}
+      data: {},
+      currentFile: null
     }
   }
   componentDidMount(){
@@ -128,20 +129,28 @@ export default class App extends Component {
       } 
     }
   }
+  
+  classify=()=>{
+
+  }
+
+  handleFile=(event)=>{
+    const file=event.target.files[0];
+    console.log(file)
+    this.setState({currentFile: URL.createObjectURL(file)});
+  }
 
   render() {
     return (
     <div className="App">
-      {/* this.state.pics.map(pic=>
-        <img src={pic.download_url} alt="nothing"></img>
-      ) */}
-      {/* <img onClick={this.classifyImage} src={this.state.onePic} alt="error"/> */}
-      <img /* onClick={this.classifyImage} */onClick={()=>this.twoPicCreate(this.state.pics, this.range)} src={this.state.twoPic} alt="error"/>
+      
+      <img src={this.state.currentFile} alt="error"/>
       
       <div>{this.state.probability}</div>
       <div>{this.state.result}</div>
-      <form>
-        <input type="file"></input>
+      <form className={'fileUpload'} onSubmit={this.classify}>
+        <input type="file" onChange={this.handleFile}/>
+        <input type="submit" />
       </form>
     </div>
     )

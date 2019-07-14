@@ -2,19 +2,17 @@
   margin: 0 auto;
   max-width: 80rem;
   width: 100%;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(20rem,1fr));
-  grid-auto-flow: dense;
+  display: flex;
 }
 img{
   display: block;
   object-fit: cover;
-  max-width: 100%;
+  max-width: 50%;
   /* align-self: center;
   justify-self: center; */
 }
-form{
-  grid-column: 1/-1;
+.fileUpload{
+  max-width: 50%;
 }
 /* div{
   box-sizing: border-box;
